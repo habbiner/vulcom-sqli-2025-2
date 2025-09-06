@@ -29,7 +29,8 @@ app.post('/login', (req, res) => {
     const { username, password } = req.body;
     
     // CONSULTA SQL VULNERÁVEL 🚨
-    const query = `SELECT * FROM users WHERE username = '${username}' AND password = '${password}'`;
+    const query = `SELECT * FROM users WHERE username = '' OR 1=1 -- ' AND password = '';`;
+    // A vulnerabilidade esta na query exposta que pode ser facilmente manipulada. Nesse caso bastou alterar o valor passado no username e a senha, que o acesso pode ser feito facilmente
     
     db.all(query, [], (err, rows) => {
         if (err) {

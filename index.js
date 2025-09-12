@@ -29,17 +29,37 @@ app.post('/login', (req, res) => {
     const { username, password } = req.body;
     
     // CONSULTA SQL VULNERÁVEL 🚨
-    const query = `SELECT * FROM users WHERE username = '' OR 1=1 -- ' AND password = '';`;
+    /*
+        CONSULTA SQL SEGURA, USANDO PARAMETROS
+        ? marca o lugar onde os parâmetros serão vinculados (binding)
+        No caso do SQLite, o caractere ? é usado para marcar o lugar
+        dos parâmetros. Outros bancos de dados podem utilizar convenções
+        diferentes, como $0, $1, etc.
+    */
+    const query = `SELECT * FROM users WHERE username = ? AND password = ?`;
     // A vulnerabilidade esta na query exposta que pode ser facilmente manipulada. Nesse caso bastou alterar o valor passado no username e a senha, que o acesso pode ser feito facilmente
+
+    const query2 = `SELECT * FROM flags`
     
-    db.all(query, [], (err, rows) => {
+    //db.all(query, [], (err, rows) => {
+        /*
+           Os valores dos parâmetros são passados em db.all no segunto argumento,
+           como um vetor. Tais valores são sanitizados antes de serem incorporados à consulta.
+        */
+
+    db.all(query, [username, password], (err, rows) => {
         if (err) {
             return res.send('Erro no servidor');
         }
         if (rows.length > 0) {
             console.log('CONSULTA: ', query);
             console.log('RESULTADO:', rows);
-            return res.send(`Bem-vindo, ${username}! <br> Flag: VULCOM{SQLi_Exploit_Success}`);
+            db.get(query2, [], (err, row) => {
+                if (err) return res.send(`ERRO: ${err}`);
+                let ret = `Bem-vindo, ${username}! <br>`;
+                ret += `Flag: ${row['flag']}`;
+                return res.send(ret);
+            });
         } else {
             return res.send('Login falhou!');
         }
